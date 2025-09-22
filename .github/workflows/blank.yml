@@ -31,17 +31,24 @@ jobs:
 
       - name: 运行签到脚本
         env:
-          # 基本账号
-          USER: cooie
-          PASS: w1723875329
+          # 基本账号，从 Secrets 调用
+          USER: ${{ secrets.USER }}
+          PASS: ${{ secrets.PASS }}
 
-          # Cookie配置（直接填你的Cookie）
-          NS_COOKIE: "colorscheme=light; hmti_=1757986551-s-6VrcQpwLj9trAkh4xvklbTJeXZ3NTQ7z7txJn87-4a; session=9028c60a77b56662a8069f488eeec4f3; smac=1758371717-bIvi5y1yhWzmqn2_Boh7IQm4ta2ah3KQKZ1ptcc5t84; cf_clearance=reA5mnIgbQNAqqiOn83m4z4xGDnFvpKMTQwLonW3TKw-1758505336-1.2.1.1-QNuriqiuGDTRAi4bthC6list.Vf0crEu0dZb7VPDbvm5.q51tMRdarKeiymf4YTP.BhvpbAaSOFHnFUOBla0vtsXiuIE4dsckTUHfah1kXXAYKk6ObxvLTDF5_GpwM3YwY4FIJbG.I3gffOhC9E3pOCI7xFv9vsoWHDYUr1VVB0lg58M0yrowHEEDr3vDAOr6eKvB9usowcwAZu.Pde4nXPfjY8f2EsoZf.pk9xqB6w; sortBy=postTime; fog=d3a2424a0d2d757a8c5402ac705c9228e756fe2356afeb39c3a8b95455866f7b"
+          # Cookie，从 Secrets 调用
+          NS_COOKIE: ${{ secrets.NS_COOKIE }}
 
-          # Telegram推送配置
-          TG_BOT_TOKEN: "8131660970:AAGxBA6KxzIOwm3d7C6mAh-Dy_IJwwhr3YY"
-          TG_USER_ID: "8106348233"
-          # TG_THREAD_ID可不填
-          TG_THREAD_ID: ""
+          # Telegram 推送配置
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_USER_ID: ${{ secrets.TG_USER_ID }}
+          TG_THREAD_ID: ${{ secrets.TG_THREAD_ID }}
+
+          # GitHub 自动刷新 Cookie（可选）
+          GH_PAT: ${{ secrets.GH_PAT }}
+
+          # 验证码服务（如果需要）
+          SOLVER_TYPE: ${{ secrets.SOLVER_TYPE }}
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          CLIENTT_KEY: ${{ secrets.CLIENTT_KEY }}
 
         run: python nodeseek_sign.py
