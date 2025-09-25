@@ -1,54 +1,70 @@
-name: nodeseek鸡腿签到
+import os
+import time
+import random
+import requests
 
-on:
-  push:
-    branches:
-      - main
-  schedule:
-    - cron: '00 16 * * *'  # 北京时间 00:00 (UTC+8)
-  workflow_dispatch:
+# ========= 随机延时，避免固定时间签到 =========
+delay = random.randint(0, 1800)  # 随机延时 0~1800 秒（0~30 分钟）
+print(f"随机延时 {delay} 秒后开始签到...")
+time.sleep(delay)
 
-permissions:
-  contents: read
-  actions: write
 
-jobs:
-  run-nodeseek-sign:
-    runs-on: ubuntu-latest
+# ========= 从 GitHub Actions 读取环境变量 =========
+USER = os.getenv("USER")
+PASS = os.getenv("PASS")
+NS_COOKIE = os.getenv("NS_COOKIE")
 
-    steps:
-      - name: 检出代码仓库
-        uses: actions/checkout@v3
+TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN")
+TG_USER_ID = os.getenv("TG_USER_ID")
+TG_THREAD_ID = os.getenv("TG_THREAD_ID")
 
-      - name: 配置Python环境
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.11.8'
 
-      - name: 安装依赖包
-        run: |
-          pip install curl_cffi requests
+# ========= NodeSeek 签到逻辑 =========
+def nodeseek_signin(user, password, cookie):
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0",
+            "Cookie": cookie
+        }
 
-      - name: 运行签到脚本
-        env:
-          # 基本账号，从 Secrets 调用
-          USER: ${{ secrets.USER }}
-          PASS: ${{ secrets.PASS }}
+        # 这里假设签到接口是这个（请根据你原始脚本的 API 调整）
+        url = "https://www.nodeseek.com/api/signin"
 
-          # Cookie，从 Secrets 调用
-          NS_COOKIE: ${{ secrets.NS_COOKIE }}
+        resp = requests.post(url, headers=headers, data={"username": user, "password": password}, timeout=15)
 
-          # Telegram 推送配置
-          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
-          TG_USER_ID: ${{ secrets.TG_USER_ID }}
-          TG_THREAD_ID: ${{ secrets.TG_THREAD_ID }}
+        if resp.status_code == 200:
+            return f"账号 {user} 签到成功：{resp.text}"
+        else:
+            return f"账号 {user} 签到失败，状态码：{resp.status_code}"
 
-          # GitHub 自动刷新 Cookie（可选）
-          GH_PAT: ${{ secrets.GH_PAT }}
+    except Exception as e:
+        return f"账号 {user} 签到出错：{str(e)}"
 
-          # 验证码服务（如果需要）
-          SOLVER_TYPE: ${{ secrets.SOLVER_TYPE }}
-          API_BASE_URL: ${{ secrets.API_BASE_URL }}
-          CLIENTT_KEY: ${{ secrets.CLIENTT_KEY }}
 
-        run: python nodeseek_sign.py
+# ========= Telegram 推送 =========
+def send_telegram(msg):
+    if not TG_BOT_TOKEN or not TG_USER_ID:
+        print("未配置 Telegram 推送，跳过。")
+        return
+
+    url = f"https://api.telegram.org/bot{TG_BOT_TOKEN}/sendMessage"
+    payload = {
+        "chat_id": TG_USER_ID,
+        "text": msg,
+        "parse_mode": "HTML"
+    }
+
+    if TG_THREAD_ID:
+        payload["message_thread_id"] = TG_THREAD_ID
+
+    try:
+        requests.post(url, data=payload, timeout=10)
+    except Exception as e:
+        print("推送 Telegram 失败：", e)
+
+
+# ========= 主逻辑 =========
+if __name__ == "__main__":
+    result = nodeseek_signin(USER, PASS, NS_COOKIE)
+    print(result)
+    send_telegram(result)
