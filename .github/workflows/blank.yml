@@ -5,7 +5,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: '00 16 * * *'  # 北京时间 00:00 (UTC+8)
+    - cron: '0 16 * * *'  # UTC 16:00 = 北京时间 00:00
   workflow_dispatch:
 
 permissions:
@@ -29,26 +29,22 @@ jobs:
         run: |
           pip install curl_cffi requests
 
+      - name: 随机延迟执行
+        run: |
+          delay=$((RANDOM % 32400))   # 随机等待 0~32400 秒 (0~9 小时)
+          echo "随机延迟 $delay 秒 (~$((delay/3600)) 小时 $(( (delay%3600) / 60 )) 分) 后开始签到..."
+          sleep $delay
+
       - name: 运行签到脚本
         env:
-          # 基本账号，从 Secrets 调用
           USER: ${{ secrets.USER }}
           PASS: ${{ secrets.PASS }}
-
-          # Cookie，从 Secrets 调用
           NS_COOKIE: ${{ secrets.NS_COOKIE }}
-
-          # Telegram 推送配置
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           TG_USER_ID: ${{ secrets.TG_USER_ID }}
           TG_THREAD_ID: ${{ secrets.TG_THREAD_ID }}
-
-          # GitHub 自动刷新 Cookie（可选）
           GH_PAT: ${{ secrets.GH_PAT }}
-
-          # 验证码服务（如果需要）
           SOLVER_TYPE: ${{ secrets.SOLVER_TYPE }}
           API_BASE_URL: ${{ secrets.API_BASE_URL }}
           CLIENTT_KEY: ${{ secrets.CLIENTT_KEY }}
-
         run: python nodeseek_sign.py
